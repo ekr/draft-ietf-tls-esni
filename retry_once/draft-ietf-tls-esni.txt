@@ -5,12 +5,12 @@
 tls                                                          E. Rescorla
 Internet-Draft                                   Windy Hill Systems, LLC
 Intended status: Standards Track                                  K. Oku
-Expires: 28 November 2024                                         Fastly
+Expires: 4 February 2025                                          Fastly
                                                              N. Sullivan
                                              Cryptography Consulting LLC
                                                               C. A. Wood
                                                               Cloudflare
-                                                             27 May 2024
+                                                           3 August 2024
 
 
                        TLS Encrypted Client Hello
@@ -44,7 +44,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 28 November 2024.
+   This Internet-Draft will expire on 4 February 2025.
 
 Copyright Notice
 
@@ -995,8 +995,11 @@ Table of Contents
    in this situation is a signal that the server is misconfigured, e.g.,
    the server might have multiple inconsistent configurations so that
    the client reached a node with configuration A in the first
-   connection and a node with configuration B in the second.  If a
-   client does not retry, it MUST report an error to the calling
+   connection and a node with configuration B in the second.  Note that
+   this guidance does not apply to the cases in the previous paragraph
+   where the server has securely disabled ECH.
+
+   If a client does not retry, it MUST report an error to the calling
    application.
 
 6.1.7.  Authenticating for the Public Name
@@ -2084,9 +2087,9 @@ Table of Contents
    [ECH-IN-DNS]
               Schwartz, B. M., Bishop, M., and E. Nygren, "Bootstrapping
               TLS Encrypted ClientHello with DNS Service Bindings", Work
-              in Progress, Internet-Draft, draft-ietf-tls-svcb-ech-02,
-              23 May 2024, <https://datatracker.ietf.org/doc/html/draft-
-              ietf-tls-svcb-ech-02>.
+              in Progress, Internet-Draft, draft-ietf-tls-svcb-ech-03,
+              23 July 2024, <https://datatracker.ietf.org/doc/html/
+              draft-ietf-tls-svcb-ech-03>.
 
    [HPKE]     Barnes, R., Bhargavan, K., Lipp, B., and C. Wood, "Hybrid
               Public Key Encryption", RFC 9180, DOI 10.17487/RFC9180,
