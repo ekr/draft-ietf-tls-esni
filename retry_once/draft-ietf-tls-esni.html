@@ -1032,7 +1032,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Rescorla, et al.</td>
-<td class="center">Expires 4 February 2025</td>
+<td class="center">Expires 6 February 2025</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1045,12 +1045,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-ietf-tls-esni-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2024-08-03" class="published">3 August 2024</time>
+<time datetime="2024-08-05" class="published">5 August 2024</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2025-02-04">4 February 2025</time></dd>
+<dd class="expires"><time datetime="2025-02-06">6 February 2025</time></dd>
 <dt class="label-authors">Authors:</dt>
 <dd class="authors">
 <div class="author">
@@ -1105,7 +1105,7 @@ encrypting a ClientHello message under a server public key.<a href="#section-abs
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 4 February 2025.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 6 February 2025.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1199,6 +1199,9 @@ encrypting a ClientHello message under a server public key.<a href="#section-abs
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1.2.7">
                     <p id="section-toc.1-1.6.2.1.2.7.1"><a href="#section-6.1.7" class="auto internal xref">6.1.7</a>.  <a href="#name-authenticating-for-the-publ" class="internal xref">Authenticating for the Public Name</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1.2.8">
+                    <p id="section-toc.1-1.6.2.1.2.8.1"><a href="#section-6.1.8" class="auto internal xref">6.1.8</a>.  <a href="#name-impact-of-retry-on-future-c" class="internal xref">Impact of Retry on Future Connections</a></p>
 </li>
                 </ul>
 </li>
@@ -2134,7 +2137,7 @@ It then computes the final payload as:<a href="#section-6.1.1-5" class="pilcrow"
 <p id="section-6.1.1-7">Including <code>ClientHelloOuterAAD</code> as the HPKE AAD binds the <code>ClientHelloOuter</code>
 to the <code>ClientHelloInner</code>, this preventing attackers from modifying
 <code>ClientHelloOuter</code> while keeping the same <code>ClientHelloInner</code>, as described in
-{#flow-clienthello-malleability}.<a href="#section-6.1.1-7" class="pilcrow">¶</a></p>
+<a href="#flow-clienthello-malleability" class="auto internal xref">Section 10.12.3</a>.<a href="#section-6.1.1-7" class="pilcrow">¶</a></p>
 <p id="section-6.1.1-8">Finally, the client replaces <code>payload</code> with <code>final_payload</code> to obtain
 ClientHelloOuter. The two values have the same length, so it is not necessary
 to recompute length prefixes in the serialized structure.<a href="#section-6.1.1-8" class="pilcrow">¶</a></p>
@@ -2246,12 +2249,9 @@ with a "decode_error" alert. Otherwise, the client computes
 <code>hrr_accept_confirmation</code> as described in <a href="#backend-server-hrr" class="auto internal xref">Section 7.2.1</a>. If this value
 matches the extension payload, the server has accepted ECH. Otherwise, it has
 rejected ECH.<a href="#section-6.1.4-4" class="pilcrow">¶</a></p>
-<p id="section-6.1.4-5">[[OPEN ISSUE: Depending on what we do for issue#450, it may be appropriate to
-change the client behavior if the HRR extension is present but with the wrong
-value.]]<a href="#section-6.1.4-5" class="pilcrow">¶</a></p>
-<p id="section-6.1.4-6">If the server accepts ECH, the client handshakes with ClientHelloInner as
+<p id="section-6.1.4-5">If the server accepts ECH, the client handshakes with ClientHelloInner as
 described in <a href="#accepted-ech" class="auto internal xref">Section 6.1.5</a>. Otherwise, the client handshakes with
-ClientHelloOuter as described in <a href="#rejected-ech" class="auto internal xref">Section 6.1.6</a>.<a href="#section-6.1.4-6" class="pilcrow">¶</a></p>
+ClientHelloOuter as described in <a href="#rejected-ech" class="auto internal xref">Section 6.1.6</a>.<a href="#section-6.1.4-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="accepted-ech">
@@ -2387,6 +2387,37 @@ trigger retries, as described in <a href="#rejected-ech" class="auto internal xr
 instance, by reporting a failed connection with a dedicated error code.<a href="#section-6.1.7-4" class="pilcrow">¶</a></p>
 </section>
 </div>
+<div id="impact-of-retry-on-future-connections">
+<section id="section-6.1.8">
+          <h4 id="name-impact-of-retry-on-future-c">
+<a href="#section-6.1.8" class="section-number selfRef">6.1.8. </a><a href="#name-impact-of-retry-on-future-c" class="section-name selfRef">Impact of Retry on Future Connections</a>
+          </h4>
+<p id="section-6.1.8-1">Clients MAY use information learned from a rejected ECH for future
+connections to avoid repeatedly connecting to the same server and
+being forced to retry. However, they MUST handle ECH rejection for
+those connections as if it were a fresh connection, rather than
+enforcing the single retry limit from <a href="#rejected-ech" class="auto internal xref">Section 6.1.6</a>. The reason
+for this requirement is that if the server sends a "retry_config"
+and then immediately rejects the resulting connection, it is
+most likely misconfigured. However, if the server sends a "retry_config"
+and then the client tries to use that to connect some time
+later, it is possible that the server has been forced to
+change its configuration again and is now trying to recover.<a href="#section-6.1.8-1" class="pilcrow">¶</a></p>
+<p id="section-6.1.8-2">Any persisted information MUST be associated with the ECHConfig source
+used to bootstrap the connection, such as a DNS SVCB ServiceMode record
+<span>[<a href="#ECH-IN-DNS" class="cite xref">ECH-IN-DNS</a>]</span>. Clients MUST limit any sharing of persisted ECH-related
+state to connections that use the same ECHConfig source. Otherwise, it
+might become possible for the client to have the wrong public name for
+the server, making recovery impossible.<a href="#section-6.1.8-2" class="pilcrow">¶</a></p>
+<p id="section-6.1.8-3">ECHConfigs learned from ECH rejection can be used as a tracking
+vector. Clients SHOULD impose the same lifetime and scope restrictions
+that they apply to other server-based
+tracking vectors such as PSKs.<a href="#section-6.1.8-3" class="pilcrow">¶</a></p>
+<p id="section-6.1.8-4">In general, the safest way for clients to minimize ECH retries is to
+comply with any freshness rules (e.g., DNS TTLs) imposed by the ECH
+configuration.<a href="#section-6.1.8-4" class="pilcrow">¶</a></p>
+</section>
+</div>
 </section>
 </div>
 <div id="grease-ech">
@@ -2440,7 +2471,7 @@ MAY offer to resume sessions established without ECH.<a href="#section-6.2-5" cl
       <h2 id="name-server-behavior">
 <a href="#section-7" class="section-number selfRef">7. </a><a href="#name-server-behavior" class="section-name selfRef">Server Behavior</a>
       </h2>
-<p id="section-7-1">As described in {#topologies}, servers can play two roles, either as
+<p id="section-7-1">As described in <a href="#topologies" class="auto internal xref">Section 3.1</a>, servers can play two roles, either as
 the client-facing server or as the back-end server.
 Depending on the server role, the <code>ECHClientHello</code> will be different:<a href="#section-7-1" class="pilcrow">¶</a></p>
 <ul class="normal">
@@ -2868,7 +2899,9 @@ on the ECHClientHello.config_id value. This also means public information in a
 TLS handshake should be consistent across hosts. For example, if a
 client-facing server services many backend origin hosts, only one of which
 supports some cipher suite, it may be possible to identify that host based on
-the contents of unencrypted handshake messages.<a href="#section-10.1-7" class="pilcrow">¶</a></p>
+the contents of unencrypted handshake message. Similarly, if a backend
+origin reuses KeyShare values, then that provides a unique identifier for
+that server.<a href="#section-10.1-7" class="pilcrow">¶</a></p>
 <p id="section-10.1-8">Beyond these primary security and privacy goals, ECH also aims to hide, to some
 extent, the fact that it is being used at all. Specifically, the GREASE ECH
 extension described in <a href="#grease-ech" class="auto internal xref">Section 6.2</a> does not change the security properties of

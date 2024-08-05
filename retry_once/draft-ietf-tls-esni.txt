@@ -5,12 +5,12 @@
 tls                                                          E. Rescorla
 Internet-Draft                                   Windy Hill Systems, LLC
 Intended status: Standards Track                                  K. Oku
-Expires: 4 February 2025                                          Fastly
+Expires: 6 February 2025                                          Fastly
                                                              N. Sullivan
                                              Cryptography Consulting LLC
                                                               C. A. Wood
                                                               Cloudflare
-                                                           3 August 2024
+                                                           5 August 2024
 
 
                        TLS Encrypted Client Hello
@@ -44,7 +44,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 4 February 2025.
+   This Internet-Draft will expire on 6 February 2025.
 
 Copyright Notice
 
@@ -82,6 +82,7 @@ Table of Contents
        6.1.5.  Handshaking with ClientHelloInner
        6.1.6.  Handshaking with ClientHelloOuter
        6.1.7.  Authenticating for the Public Name
+       6.1.8.  Impact of Retry on Future Connections
      6.2.  GREASE ECH
    7.  Server Behavior
      7.1.  Client-Facing Server
@@ -774,7 +775,7 @@ Table of Contents
    Including ClientHelloOuterAAD as the HPKE AAD binds the
    ClientHelloOuter to the ClientHelloInner, this preventing attackers
    from modifying ClientHelloOuter while keeping the same
-   ClientHelloInner, as described in {#flow-clienthello-malleability}.
+   ClientHelloInner, as described in Section 10.12.3.
 
    Finally, the client replaces payload with final_payload to obtain
    ClientHelloOuter.  The two values have the same length, so it is not
@@ -886,10 +887,6 @@ Table of Contents
    client computes hrr_accept_confirmation as described in
    Section 7.2.1.  If this value matches the extension payload, the
    server has accepted ECH.  Otherwise, it has rejected ECH.
-
-   [[OPEN ISSUE: Depending on what we do for issue#450, it may be
-   appropriate to change the client behavior if the HRR extension is
-   present but with the wrong value.]]
 
    If the server accepts ECH, the client handshakes with
    ClientHelloInner as described in Section 6.1.5.  Otherwise, the
@@ -1034,6 +1031,37 @@ Table of Contents
    instance, by reporting a failed connection with a dedicated error
    code.
 
+6.1.8.  Impact of Retry on Future Connections
+
+   Clients MAY use information learned from a rejected ECH for future
+   connections to avoid repeatedly connecting to the same server and
+   being forced to retry.  However, they MUST handle ECH rejection for
+   those connections as if it were a fresh connection, rather than
+   enforcing the single retry limit from Section 6.1.6.  The reason for
+   this requirement is that if the server sends a "retry_config" and
+   then immediately rejects the resulting connection, it is most likely
+   misconfigured.  However, if the server sends a "retry_config" and
+   then the client tries to use that to connect some time later, it is
+   possible that the server has been forced to change its configuration
+   again and is now trying to recover.
+
+   Any persisted information MUST be associated with the ECHConfig
+   source used to bootstrap the connection, such as a DNS SVCB
+   ServiceMode record [ECH-IN-DNS].  Clients MUST limit any sharing of
+   persisted ECH-related state to connections that use the same
+   ECHConfig source.  Otherwise, it might become possible for the client
+   to have the wrong public name for the server, making recovery
+   impossible.
+
+   ECHConfigs learned from ECH rejection can be used as a tracking
+   vector.  Clients SHOULD impose the same lifetime and scope
+   restrictions that they apply to other server-based tracking vectors
+   such as PSKs.
+
+   In general, the safest way for clients to minimize ECH retries is to
+   comply with any freshness rules (e.g., DNS TTLs) imposed by the ECH
+   configuration.
+
 6.2.  GREASE ECH
 
    If the client attempts to connect to a server and does not have an
@@ -1076,7 +1104,7 @@ Table of Contents
 
 7.  Server Behavior
 
-   As described in {#topologies}, servers can play two roles, either as
+   As described in Section 3.1, servers can play two roles, either as
    the client-facing server or as the back-end server.  Depending on the
    server role, the ECHClientHello will be different:
 
@@ -1491,7 +1519,8 @@ Table of Contents
    if a client-facing server services many backend origin hosts, only
    one of which supports some cipher suite, it may be possible to
    identify that host based on the contents of unencrypted handshake
-   messages.
+   message.  Similarly, if a backend origin reuses KeyShare values, then
+   that provides a unique identifier for that server.
 
    Beyond these primary security and privacy goals, ECH also aims to
    hide, to some extent, the fact that it is being used at all.
