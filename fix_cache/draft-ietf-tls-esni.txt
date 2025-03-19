@@ -5,12 +5,12 @@
 tls                                                          E. Rescorla
 Internet-Draft                                               Independent
 Intended status: Standards Track                                  K. Oku
-Expires: 17 August 2025                                           Fastly
+Expires: 20 September 2025                                        Fastly
                                                              N. Sullivan
                                              Cryptography Consulting LLC
                                                               C. A. Wood
                                                               Cloudflare
-                                                        13 February 2025
+                                                           19 March 2025
 
 
                        TLS Encrypted Client Hello
@@ -44,7 +44,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 17 August 2025.
+   This Internet-Draft will expire on 20 September 2025.
 
 Copyright Notice
 
@@ -363,19 +363,6 @@ Table of Contents
       entity trusted to update the ECH configuration.  This is used to
       correct misconfigured clients, as described in Section 6.1.6.
 
-      Clients MUST ignore any ECHConfig structure whose public_name is
-      not parsable as a dot-separated sequence of LDH labels, as defined
-      in [RFC5890], Section 2.3.1 or which begins or end with an ASCII
-      dot.  Clients additionally SHOULD ignore the structure if the
-      final LDH label either consists of all ASCII digits (i.e. '0'
-      through '9') or is "0x" or "0X" followed by some, possibly empty,
-      sequence of ASCII hexadecimal digits (i.e. '0' through '9', 'a'
-      through 'f', and 'A' through 'F').  This avoids public_name values
-      that may be interpreted as IPv4 literals.  Additionally, clients
-      MAY ignore the ECHConfig if the length of any label in the DNS
-      name is longer than 63 octets, as this is the maximum length of a
-      DNS label.
-
       See Section 6.1.7 for how the client interprets and validates the
       public_name.
 
@@ -547,9 +534,11 @@ Table of Contents
 
    The client_hello field is computed by first making a copy of
    ClientHelloInner and setting the legacy_session_id field to the empty
-   string.  Note this field uses the ClientHello structure, defined in
-   Section 4.1.2 of [RFC8446] which does not include the Handshake
-   structure's four byte header.  The zeros field MUST be all zeroes.
+   string.  In TLS, this field uses the ClientHello structure defined in
+   Section 4.1.2 of [RFC8446].  In DTLS, it uses the ClientHello
+   structured defined in Section 5.3 of [RFC9147].  This does not
+   include Handshake structure's four-byte header in TLS, nor twelve-
+   byte header in DTLS.  The zeros field MUST be all zeroes.
 
    Repeating large extensions, such as "key_share" with post-quantum
    algorithms, between ClientHelloInner and ClientHelloOuter can lead to
@@ -623,11 +612,13 @@ Table of Contents
    Section 10.12.3), ECH authenticates ClientHelloOuter by passing
    ClientHelloOuterAAD as the associated data for HPKE sealing and
    opening operations.  The ClientHelloOuterAAD is a serialized
-   ClientHello structure, defined in Section 4.1.2 of [RFC8446], which
-   matches the ClientHelloOuter except that the payload field of the
+   ClientHello structure, defined in Section 4.1.2 of [RFC8446] for TLS
+   and Section 5.3 of [RFC9147] for DTLS, which matches the
+   ClientHelloOuter except that the payload field of the
    "encrypted_client_hello" is replaced with a byte string of the same
-   length but whose contents are zeros.  This value does not include the
-   four-byte header from the Handshake structure.
+   length but whose contents are zeros.  This value does not include
+   Handshake structure's four-byte header in TLS, nor twelve-byte header
+   in DTLS.
 
 6.  Client Behavior
 
@@ -1027,6 +1018,25 @@ Table of Contents
    instance, by reporting a failed connection with a dedicated error
    code.
 
+   Prior to attempting a connection, a client SHOULD validate the
+   ECHConfig to ensure that the public_name can be authenticated.
+   Clients SHOULD ignore any ECHConfig structure with a public_name that
+   is not a valid host name in preferred name syntax (see Section 2 of
+   [DNS-TERMS]).  That is, to be valid, the public_name needs to be a
+   dot-separated sequence of LDH labels, as defined in Section 2.3.1 of
+   [RFC5890], where:
+
+   *  the sequence does not begin or end with an ASCII dot, and
+
+   *  all labels are at most 63 octets.
+
+   Clients additionally SHOULD ignore the structure if the final LDH
+   label either consists of all ASCII digits (i.e. '0' through '9') or
+   is "0x" or "0X" followed by some, possibly empty, sequence of ASCII
+   hexadecimal digits (i.e. '0' through '9', 'a' through 'f', and 'A'
+   through 'F').  This avoids public_name values that may be interpreted
+   as IPv4 literals.
+
 6.1.8.  Impact of Retry on Future Connections
 
    Clients MAY use information learned from a rejected ECH for future
@@ -1331,7 +1341,9 @@ Table of Contents
 
    where HKDF-Expand-Label is defined in [RFC8446], Section 7.1, "0"
    indicates a string of Hash.length bytes set to zero, and Hash is the
-   hash function used to compute the transcript hash.
+   hash function used to compute the transcript hash.  In DTLS, the
+   modified version of HKDF-Expand-Label defined in [RFC9147],
+   Section 5.9 is used instead.
 
    The backend server MUST NOT perform this operation if it negotiated
    TLS 1.2 or below.  Note that doing so would overwrite the downgrade
@@ -1539,13 +1551,15 @@ Table of Contents
    where possible.  This means client-facing servers should use the same
    ECHConfig for as many hosts as possible.  An attacker can distinguish
    two hosts that have different ECHConfig values based on the
-   ECHClientHello.config_id value.  This also means public information
-   in a TLS handshake should be consistent across hosts.  For example,
-   if a client-facing server services many backend origin hosts, only
-   one of which supports some cipher suite, it may be possible to
-   identify that host based on the contents of unencrypted handshake
-   message.  Similarly, if a backend origin reuses KeyShare values, then
-   that provides a unique identifier for that server.
+   ECHClientHello.config_id value.
+
+   This also means public information in a TLS handshake should be
+   consistent across hosts.  For example, if a client-facing server
+   services many backend origin hosts, only one of which supports some
+   cipher suite, it may be possible to identify that host based on the
+   contents of unencrypted handshake message.  Similarly, if a backend
+   origin reuses KeyShare values, then that provides a unique identifier
+   for that server.
 
    Beyond these primary security and privacy goals, ECH also aims to
    hide, to some extent, the fact that it is being used at all.
@@ -1592,6 +1606,13 @@ Table of Contents
    per-client ECHConfig structures delivered via HTTPS RRs with high
    TTLs, challenging.  Clients can help mitigate this problem by
    flushing any DNS or ECHConfig state upon changing networks.
+
+   ECHConfig rotation rate is also an issue for non-malicious servers,
+   which may want to rotate keys frequently to limit exposure if the key
+   is compromised.  Rotating too frequently limits the client anonymity
+   set.  In practice, servers with high load are the best candidates to
+   be client-facing servers and so anonymity sets will typically be
+   large even with fairly fast rotation intervals.
 
 10.4.  Ignored Configuration Identifiers and Trial Decryption
 
@@ -1838,7 +1859,7 @@ Table of Contents
    This design does not provide forward secrecy for the inner
    ClientHello because the server's ECH key is static.  However, the
    window of exposure is bound by the key lifetime.  It is RECOMMENDED
-   that servers rotate keys frequently.
+   that servers rotate keys regularly.
 
 10.10.6.  Enable Multi-party Security Contexts
 
@@ -2191,6 +2212,11 @@ Table of Contents
               November 2023, <https://www.rfc-editor.org/rfc/rfc9460>.
 
 12.2.  Informative References
+
+   [DNS-TERMS]
+              Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS
+              Terminology", RFC 8499, DOI 10.17487/RFC8499, January
+              2019, <https://www.rfc-editor.org/rfc/rfc8499>.
 
    [ECH-Analysis]
               "A Symbolic Analysis of Privacy for TLS 1.3 with Encrypted
